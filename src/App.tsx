@@ -24,7 +24,7 @@ const App = ({ piral }: { piral: PiletApi }) => {
         const projs = await bindings.toArray().then(res => res.map(i => i.get('project').value))
         setProjects(projs)
     }
-
+ 
     return (
         <div>
             <h1>ConSolid projects</h1>
