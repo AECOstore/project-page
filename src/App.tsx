@@ -1,143 +1,86 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
-import { TextField, Button, Grid, Box, Dialog, useMediaQuery, DialogTitle, DialogContent, Alert } from '@mui/material'
+import { TextField, Button, Grid, Box, useMediaQuery, DialogTitle, DialogContent, Alert, Typography } from '@mui/material'
 import { PiletApi } from 'consolid-shell'
-import { v4 } from 'uuid'
-import { createDpopHeader, generateDpopKeyPair, buildAuthenticatedFetch } from '@inrupt/solid-client-authn-core';
-import Cookies from 'universal-cookie';
-import jwt_decode from 'jwt-decode'
-const cookies = new Cookies()
-
-async function generateAccessToken(email: string, password: string, idp: string): Promise<any> {
-    if (!idp.endsWith("/")) idp += '/'
-    const response = await fetch(`${idp}idp/credentials/`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password, name: v4() }),
-    });
-
-    const { id, secret } = await response.json();
-    const tokenUrl = `${idp}.oidc/token`;
-    const authString = `${encodeURIComponent(id)}:${encodeURIComponent(secret)}`;
-    const dpopKey = await generateDpopKeyPair();
-    const r = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-            authorization: `Basic ${Buffer.from(authString).toString('base64')}`,
-            'content-type': 'application/x-www-form-urlencoded',
-            // dpop: await createDpopHeader(tokenUrl, 'POST', dpopKey),
-        },
-        body: 'grant_type=client_credentials&scope=webid',
-    });
-    const { access_token } = await r.json();
-    return { token: access_token, dpop: dpopKey }
-}
+import ProjectCard from './ProjectCard'
+import {QueryEngine} from '@comunica/query-sparql'
+import ProjectDialog from './ProjectCreation'
 
 
 const App = ({ piral }: { piral: PiletApi }) => {
-    const [oidcIssuer, setOidcIssuer] = useState("http://localhost:3000");
-    const [email, setEmail] = useState("jeroen@example.org");
-    const [password, setPassword] = useState("test123");
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(undefined)
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const constants = piral.getData("CONSTANTS")
+    const [session, setSession] = React.useState(piral.makeSession())
+    const [projects, setProjects] = React.useState([])
+    const [open, setOpen] = React.useState(false)
 
-    // check if logged in at initialisation
-    useEffect(() => {
-        let token = cookies.get('access_token')
-        if (token && token !== "undefined") {
-            const loggedIn = jwt_decode<any>(token).webid
-            setIsLoggedIn(loggedIn)
-        } else {
-            setIsLoggedIn(false)
-        }
-    }, [])
+    async function getMyProjects() {
+        const source = await piral.findSparqlSatellite(session.info.webId)
+        const myEngine = new QueryEngine()
+        const query = `select ?project where {
+            ?project a <https://w3id.org/consolid#Project> .
+        }`
 
-    const onLoginClick = async (e) => {
-        try {
-            setLoading(e => true)
-            console.log("logging in")
-            const { token } = await generateAccessToken(email, password, oidcIssuer)
-            cookies.set("access_token", token)
-            piral.setData('http://localhost:5000/jeroen/access_token', token)
-            if (token) setIsLoggedIn(jwt_decode<any>(cookies.get('access_token')).webid)
-            else setIsLoggedIn(false)
-            setLoading(e => false)
-        } catch (error) {
-            setError(error.message)
-            setLoading(e => false)
-        }
-    };
-
-    const onLogoutClick = async (e) => {
-        try {
-            setLoading(e => true)
-            cookies.set("access_token", undefined)
-            piral.setData('access_token', undefined)
-            setIsLoggedIn(false)
-            setLoading(e => false)
-        } catch (error) {
-            setError(error.message)
-            setLoading(e => false)
-        }
-    };
+        const bindings = await myEngine.queryBindings(query, {sources: [source], fetch: session.fetch})
+        const projs = await bindings.toArray().then(res => res.map(i => i.get('project').value))
+        setProjects(projs)
+    }
 
     return (
-        <div style={{ alignContent: "center", padding: 30, alignItems: "center", justifyContent: "center", marginTop: "100px", textAlign: "center" }}>
-            {(!isLoggedIn) ? (
+        <div>
+            <h1>ConSolid projects</h1>
+            {(session && session.info.isLoggedIn) ? (
                 <div>
-                    <h1 style={{ marginBottom: "30px" }}>Log in wth Solid</h1>
-                    <TextField
-                        style={inputStyle}
-                        id="oidcIssuer"
-                        label="Solid Identity Provider"
-                        placeholder="Identity Provider"
-                        defaultValue={oidcIssuer}
-                        onChange={(e) => setOidcIssuer(e.target.value)}
-                        autoFocus
-                        fullWidth
-                    />
-                    <TextField
-                        style={inputStyle}
-                        id="email"
-                        label="Email"
-                        placeholder="Email"
-                        defaultValue={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        fullWidth
-                    />
-                    <TextField
-                        style={inputStyle}
-                        id="password"
-                        label="Password"
-                        placeholder="Password"
-                        defaultValue={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoFocus
-                        type="password"
-                        fullWidth
-                    />
-
-                    <Button style={buttonStyle} onClick={onLoginClick} disabled={loading} variant="contained" color="primary">
-                        Log In
+                    <Typography>You are logged in. Select one of your own projects, load one from a public aggregator or create a new project.</Typography>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={async () => getMyProjects()}
+                        style={{ marginTop: 5, marginBottom: 5 }}
+                    >
+                        Get my projects
                     </Button>
-                    {(error) ? (
-                        <Alert style={{ margin: 5 }} onClose={() => setError("")} severity="error">{error}</Alert>
-                    ) : (
-                        <></>
-                    )}
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={async () => setOpen(true)}
+                        style={{ marginTop: 5, marginBottom: 5 }}
+                    >
+                        New Project
+                    </Button>
+                    <Box>
+                        <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                        {projects.map((item) => {
+                            return (
+                                <Grid item key={item}>
+                                <ProjectCard
+                                   
+                                    project={item}
+                                    piral={piral}
+                                />
+                                </Grid>
+                            );
+                        })}
+                        </Grid>
+                    </Box>
                 </div>
             ) : (
                 <div>
-                    <h1 style={{ marginBottom: "30px" }}>Log out</h1>
-                    <Button style={buttonStyle} onClick={onLogoutClick} disabled={loading} variant="contained" color="primary">
-                        Log out
-                    </Button>
+                    <Typography>You are not logged in. You cannot create a project, but you can load one from a public aggregator.</Typography>
                 </div>
-                )}
+            )}
+            {open ? (
+                <ProjectDialog onClose={() => setOpen(false)} open piral={piral}/>
+            ) : (
+                <></>
+            )}
+            {/* get my projects OR public aggregator*/}
+            {/* activate a project */}
+            {/* create new project */}
         </div>
     )
 }
+
+
 
 const inputStyle = {
     marginTop: 15
