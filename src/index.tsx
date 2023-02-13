@@ -18,3 +18,4 @@ export function setup(app: PiletApi) {
   app.registerPage("/project", Module)
   app.registerExtension(app.meta["link"], Module)
 }
+ 
