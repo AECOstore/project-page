@@ -15,13 +15,12 @@ const App = ({ piral }: { piral: PiletApi }) => {
 
     async function getMyProjects() {
         const source = await piral.findSparqlSatellite(session.info.webId)
-        const myEngine = new QueryEngine()
         const query = `select ?project where {
             ?project a <https://w3id.org/consolid#Project> .
         }`
 
-        const bindings = await myEngine.queryBindings(query, {sources: [source], fetch: session.fetch})
-        const projs = await bindings.toArray().then(res => res.map(i => i.get('project').value))
+        const data = await piral.querySatellite(query, source, session).then(i => i.json())
+        const projs = data.results.bindings.map(i => i.project.value)
         setProjects(projs)
     }
 
@@ -35,7 +34,7 @@ const App = ({ piral }: { piral: PiletApi }) => {
                         variant="contained"
                         color="primary"
                         onClick={async () => getMyProjects()}
-                        style={{ marginTop: 5, marginBottom: 5 }}
+                        style={{ margin: 5}}
                     >
                         Get my projects
                     </Button>
@@ -43,7 +42,7 @@ const App = ({ piral }: { piral: PiletApi }) => {
                         variant="contained"
                         color="primary"
                         onClick={async () => setOpen(true)}
-                        style={{ marginTop: 5, marginBottom: 5 }}
+                        style={{ margin: 5 }}
                     >
                         New Project
                     </Button>

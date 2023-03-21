@@ -43,7 +43,7 @@ export default function ProjectDialog(props: SimpleDialogProps) {
 }
 
   return (
-    <Dialog style={{margin: 30}} onClose={() => onClose()} open={open}>
+    <Dialog style={{margin: 30, padding: 20}} onClose={() => onClose()} open={open}>
       <DialogTitle>Create Project</DialogTitle>
       <TextField placeholder="A name for the project" value={label} onChange={(e) => setLabel(e.target.value)}/>
       <Button onClick={createNewProject}>Create project</Button>

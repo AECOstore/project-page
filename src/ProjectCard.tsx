@@ -23,7 +23,7 @@ const ProjectCard = ({piral, project}) => {
       })}
     }
     console.log('project', JSON.stringify(data, undefined, 4))
-    piral.setData(constants.ACTIVE_PROJECT, data)
+    piral.setDataGlobal(constants.ACTIVE_PROJECT, data)
 
     setProjectClicked(true);
   }
