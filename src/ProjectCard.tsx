@@ -11,7 +11,8 @@ const ProjectCard = ({piral, project}) => {
     const accessPoints = await piral.findProjectEndpoints(project)
     const data = []
     for (const ap of accessPoints) {
-      const refReg = await findReferenceRegistry(project)
+      
+      const refReg = await findReferenceRegistry(ap)
       const endpoint = await piral.findSparqlSatelliteFromResource(ap)
 
       const pod = ap.split('/').slice(0,-1).join('/') + "/"

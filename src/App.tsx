@@ -19,8 +19,9 @@ const App = ({ piral }: { piral: PiletApi }) => {
             ?project a <https://w3id.org/consolid#Project> .
         }`
 
-        const data = await piral.querySatellite(query, source, session).then(i => i.json())
+        const data = await piral.querySatellite(query, source).then(i => i.json())
         const projs = data.results.bindings.map(i => i.project.value)
+        
         setProjects(projs)
     }
 
