@@ -34,7 +34,7 @@ const ProjectCard = ({piral, project}) => {
           {projectClicked ? (
       <Redirect to="/" />
     ) : (
-          <Card style={{top: 30, width: 180}} variant="outlined">
+          <Card style={{top: 30, width: 300}} variant="outlined">
             <CardContent>
               <Typography variant="h5" component="h5">
                 {project}
@@ -43,8 +43,8 @@ const ProjectCard = ({piral, project}) => {
             // className={classes.button}
             style={{top: 10, position: "relative"}}
             variant="contained"
-            size="small"
             color="primary"
+            fullWidth
             onClick={activateProject}
           >
             Activate Project
