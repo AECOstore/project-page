@@ -9,12 +9,14 @@ const ProjectCard = ({piral, project}) => {
 
   async function activateProject() {
     const accessPoints = await piral.findProjectEndpoints(project)
+    console.log('accessPoints :>> ', accessPoints);
     const data = []
     for (const ap of accessPoints) {
       
       const refReg = await findReferenceRegistry(ap)
+      console.log('refReg :>> ', refReg);
       const endpoint = await piral.findSparqlSatelliteFromResource(ap)
-
+      console.log('endpoint :>> ', endpoint);
       const pod = ap.split('/').slice(0,-1).join('/') + "/"
       if (endpoint) {data.push({
         projectUrl: ap,
