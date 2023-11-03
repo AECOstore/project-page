@@ -13,19 +13,17 @@ const App = ({ piral }: { piral: PiletApi }) => {
     const [projects, setProjects] = React.useState([])
     const [open, setOpen] = React.useState(false)
     const [publicAggregator, setPublicAggregator] = React.useState("https://sparql.werbrouck.me/architect/sparql")
+    
     async function getMyProjects() {
+        console.log('object :>> ');
         const source = await piral.findSparqlSatellite(session.info.webId)
         await getProjects(source)
     }
 
     async function getProjects(source) {
-        const query = `select ?project where {
-            ?project a <https://w3id.org/consolid#Project> .
-        }`
-
-        const data = await piral.querySatellite(query, source).then(i => i.json())
-        const projs = data.results.bindings.map(i => i.project.value)
-        setProjects(projs)
+        console.log('source :>> ', source);
+        const cs = piral.getData(constants.CONSOLID_SATELLITE)
+        session.fetch(`${cs}/project/`)
     }
 
     return (
