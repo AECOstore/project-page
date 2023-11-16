@@ -5,29 +5,14 @@ import { findReferenceRegistry } from "consolid-raapi";
 
 const ProjectCard = ({piral, project}) => {
   const [projectClicked, setProjectClicked] = React.useState(false);
+  const [loading, setLoading ] = React.useState(false);
   const constants = piral.getData("CONSTANTS")
 
   async function activateProject() {
-    const accessPoints = await piral.findProjectEndpoints(project)
-    console.log('accessPoints :>> ', accessPoints);
-    const data = []
-    for (const ap of accessPoints) {
-      
-      const refReg = await findReferenceRegistry(ap)
-      console.log('refReg :>> ', refReg);
-      const endpoint = await piral.findSparqlSatelliteFromResource(ap)
-      console.log('endpoint :>> ', endpoint);
-      const pod = ap.split('/').slice(0,-1).join('/') + "/"
-      if (endpoint) {data.push({
-        projectUrl: ap,
-        pod,
-        endpoint,
-        referenceRegistry: refReg
-      })}
-    }
-    console.log('project', JSON.stringify(data, undefined, 4))
-    piral.setDataGlobal(constants.ACTIVE_PROJECT, data)
-
+    setLoading(true)
+    const p = await piral.loadProject(piral, project)
+    setLoading(false)
+    piral.setDataGlobal(constants.ACTIVE_PROJECT, p)
     setProjectClicked(true);
   }
 
@@ -48,6 +33,7 @@ const ProjectCard = ({piral, project}) => {
             color="primary"
             fullWidth
             onClick={activateProject}
+            disabled={loading}
           >
             Activate Project
           </Button>
